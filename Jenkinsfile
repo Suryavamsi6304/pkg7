@@ -11,6 +11,11 @@ pipeline {
                 sh 'docker build -t ${PKG_NAME}:${BUILD_NUMBER} .'
             }
         }
+        stage('Build Complete Package') {
+            steps {
+                sh 'docker build -f Dockerfile.complete -t pkg7-complete:${BUILD_NUMBER} .'
+            }
+        }
         
         stage('Test') {
             steps {

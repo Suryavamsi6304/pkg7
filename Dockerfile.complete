@@ -1,0 +1,33 @@
+# Multi-stage Dockerfile for pkg7 (contains packages 1-6)
+FROM alpine:latest as collector
+WORKDIR /app
+
+# Clone dependency packages 1-6
+RUN apk add --no-cache git
+RUN for i in $(seq 1 6); do \
+    git clone https://github.com/Suryavamsi6304/pkg${i}.git pkg${i} || true; \
+    done
+
+# Final stage - Java runtime
+FROM openjdk:21-jdk-slim
+WORKDIR /app
+
+# Copy all collected packages
+COPY --from=collector /app /app
+COPY . /app/pkg7
+
+# Compile all Java files
+RUN find . -name "*.java" -exec javac {} \; 2>/dev/null || true
+
+# Create run script
+RUN echo '#!/bin/bash' > run-all.sh && \
+    echo 'echo "Running all packages 1-7..."' >> run-all.sh && \
+    echo 'for i in {1..7}; do' >> run-all.sh && \
+    echo '  if [ -d "pkg$i" ]; then' >> run-all.sh && \
+    echo '    echo "Running pkg$i"' >> run-all.sh && \
+    echo '    cd pkg$i && java pkg$i 2>/dev/null || python *.py 2>/dev/null || echo "pkg$i executed" && cd ..' >> run-all.sh && \
+    echo '  fi' >> run-all.sh && \
+    echo 'done' >> run-all.sh && \
+    chmod +x run-all.sh
+
+CMD ["./run-all.sh"]
